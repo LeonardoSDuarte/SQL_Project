@@ -1,0 +1,90 @@
+Query 1 - Income by Genre  
+
+SELECT
+  Genre.Name genre_name,
+  SUM(Invoice.Total) total_spent
+FROM Customer
+JOIN Invoice
+  ON Customer.CustomerId = Invoice.CustomerId
+JOIN InvoiceLine
+  ON Invoice.InvoiceId = InvoiceLine.InvoiceId
+JOIN Track
+  ON Track.TrackId = InvoiceLine.TrackId
+JOIN Genre
+  ON Genre.GenreId = Track.GenreId
+GROUP BY 1
+ORDER BY 2 DESC;
+
+Query 2 - Annual income in Dollars for the most popular genres
+
+SELECT
+  Genre.Name genre_name,
+  STRFTIME('%Y', Invoice.InvoiceDate) year,
+  AVG(Invoice.Total) total_spent
+FROM Customer
+JOIN Invoice
+  ON Customer.CustomerId = Invoice.CustomerId
+JOIN InvoiceLine
+  ON Invoice.InvoiceId = InvoiceLine.InvoiceId
+JOIN Track
+  ON Track.TrackId = InvoiceLine.TrackId
+JOIN Genre
+  ON Genre.GenreId = Track.GenreId
+WHERE Genre.Name IN ('Rock', 'Latin', 'Metal', 'Alternative & Punk')
+GROUP BY 1,
+         2
+ORDER BY 2, 3 DESC;
+
+Query 3 - Playlist x Purchases
+
+SELECT
+  Playlist.Name playlist_name,
+  COUNT(*) purchases
+FROM Playlist
+LEFT JOIN PlaylistTrack
+  ON Playlist.PlaylistId = PlaylistTrack.PlaylistId
+LEFT JOIN Track
+  ON Track.TrackId = PlaylistTrack.TrackId
+LEFT JOIN InvoiceLine
+  ON InvoiceLine.TrackId = Track.TrackId
+LEFT JOIN Invoice
+  ON Invoice.InvoiceId = InvoiceLine.InvoiceId
+LEFT JOIN Customer
+  ON Customer.CustomerId = Invoice.InvoiceId
+GROUP BY 1
+ORDER BY 2 DESC;
+
+Query 4 - Purchases by most popular genre in each country
+
+WITH query1
+AS (SELECT
+  Customer.country,
+  Genre.name genre_name,
+  COUNT(*) count_genre
+FROM Invoice
+JOIN Customer
+  ON Customer.Customerid = Invoice.CustomerId
+JOIN InvoiceLine
+  ON InvoiceLine.InvoiceId = Invoice.InvoiceId
+JOIN Track
+  ON Track.TrackId = InvoiceLine.TrackId
+JOIN Genre
+  ON Genre.GenreId = Track.GenreId
+GROUP BY 1,
+         2)
+
+SELECT
+  s2.country,
+  s2.purchases,
+  query1.genre_name
+FROM query1
+JOIN (SELECT
+  query1.country,
+  MAX(query1.count_genre) purchases
+FROM query1
+GROUP BY 1) s2
+  ON s2.country = query1.country
+WHERE query1.count_genre = s2.purchases
+AND s2.country = query1.country
+ORDER BY 1;
+
